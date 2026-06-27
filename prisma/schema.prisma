@@ -1,0 +1,47 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id             String         @id @default(uuid())
+  email          String         @unique
+  name           String
+  role           String         // "EMPLOYEE", "MANAGER", "ADMIN"
+  managerId      String?
+  manager        User?          @relation("UserToManager", fields: [managerId], references: [id])
+  subordinates   User[]         @relation("UserToManager")
+  leaveBalance   Float          @default(20.0)
+  leaveRequests  LeaveRequest[] @relation("EmployeeRequests")
+  processedRequests LeaveRequest[] @relation("ApproverRequests")
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+}
+
+model LeaveRequest {
+  id             String         @id @default(uuid())
+  employeeId     String
+  employee       User           @relation("EmployeeRequests", fields: [employeeId], references: [id])
+  startDate      String         // YYYY-MM-DD
+  endDate        String         // YYYY-MM-DD
+  isHalfDay      Boolean        @default(false)
+  halfDayOption  String?        // "AM", "PM"
+  requestedDays  Float          // calculated working days
+  reason         String
+  status         String         // "PENDING", "APPROVED", "REJECTED", "CANCELLED"
+  approverId     String?
+  approver       User?          @relation("ApproverRequests", fields: [approverId], references: [id])
+  comments       String?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+}
+
+model PublicHoliday {
+  date         String   @id // YYYY-MM-DD
+  description  String
+  createdAt    DateTime @default(now())
+}
